@@ -34,6 +34,35 @@ Por ejemplo supongase que hay fisicamente dos objetos, uno parcialmente ocultado
 
 Este calculo se realiza de forma tal que mientras mas superpuesta este la imagen con menos puntaje, el puntaje de esta se penalizara mas.
 
+## Ejemplo:
+
+El archivo test2.json representa los siguientes BBs:
+
+![in1](in1.png)
+
+Soft-NMS va a retornar lo siguiente:
+
+![out1](out1.png)
+
+En ningun momento se eliminan BBs, sino que se penalizan los que se superponen y tienen puntaje inferior de la siguiente mantera:
+
+Tengamos en cuenta solo el rectangulo 1 y el 0.4, el nuevo score
+del rectangulo 0.4 se calcula:
+
+Fijamos un sigma de 0.5
+
+newscore = oldscore * exp(- IoU**2/sigma)
+
+AreaEnComun = 1
+
+AreaUnion = 4 + 4 - 1
+
+IoU = AreaEnComun/AreaUnion
+
+Finalmente newscore = 0.384
+
+
+
 ## A mejorar
 
-    - Utilizar el modulo numpy podria mejorar la performance
+    - El parametro sigma podria leerse del json
