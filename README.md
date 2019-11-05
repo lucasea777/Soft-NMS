@@ -12,6 +12,10 @@
 
  - Una vez el contender esta corriendo:
 
+    - Web demo:
+
+        Abrir [localhost:5000](http://localhost:5000)
+
     - Se puede pasar un archivo json por stdin:
 
         `cat test2.json | docker exec -i deep python3 NMS.py stdin`
