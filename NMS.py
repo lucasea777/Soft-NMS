@@ -91,7 +91,7 @@ def nms(B, S, Nt=0.5, softmax=True):
 
 def nms_numpy(B, S):
     # conjunto de salida
-    S = np.array(S)
+    S = np.array(S, dtype=float)
     B = np.array(B)
     idx = np.argsort(S)[::-1]
     for idxidx, i in enumerate(idx):
@@ -146,7 +146,7 @@ def process_json(jsondata):
             "B": convert_inv(Bout),
             "S": Sout
         })
-    return json.dumps(output)
+    return output
 
 # B = [(1,1,2,2), (2,2,2,2), (2.2,2.2,2.2,2.2), (2.4,2.2,2.2,2.3), (10,10,1,1), (1,1,2,2)]
 # S = [0.3, 0.6, 0.5, 0.9, 0.8, 0.9]
@@ -169,7 +169,7 @@ if __name__ == "__main__":
         print(nms(B, S))
     elif arguments["stdin"]:
         jsondata = json.loads(sys.stdin.read())
-        print(process_json(jsondata))
+        print(json.dumps(process_json(jsondata)))
   
     # import numpy as np
     # Bt = []

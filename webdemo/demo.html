@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<div class="parent">
+<div style="text-align: center">Input (Dibuja rectangulos con el mouse)</div>
+<div style="text-align: center">Current Score</div>
+<div style="text-align: center">Output</div>
+<canvas id="canvas"></canvas>
+<div class="slidecontainer">
+  <input type="range" min="0" max="1000" value="1000" class="slider" id="myRange">
+  <p>Value: <span id="demo"></span></p>
+  <div style="text-align: center"><button id="delete">❌</button></div>
+</div>
+<canvas id="canvasOut"></canvas>
+<div>
+<textarea id="intext" style="width: 100%; height: 100%" placeholder=""></textarea>
+</div>
+<div></div>
+<!--<canvas id="canvas" width="800" height="500"></canvas>-->
+<div>
+<textarea id="outtext" style="width: 100%; height: 100%"></textarea>
+</div>
+<style>
+body, html {
+    /*height: 100%;*/
+    background-color: rgb(54, 54, 54);
+}
+.parent {
+    display: grid;
+    grid-template-columns: 20fr 5fr 20fr;
+    grid-template-rows: 1fr 20fr 5fr;
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
+    width: 100%;
+    height: calc(100vh - 30px);
+}
+canvas {
+    cursor: crosshair;
+    border: 1px solid #000000;
+    width: 100%;
+    height: 100%;
+}
+</style>
+
+<style>
+.slidecontainer {
+  width: 100%;
+  margin: 10px;
+}
+
+.slider {
+  -webkit-appearance: none;
+  /*width: 100%;*/
+  height: 15px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+}
+</style>
+<!--<script type="text/javascript" src="http://localhost:5000/webdemo/demo.js" />-->
+<script>
+"use strict";
+//Canvas IN
+console.log("loaded");
+
+function data_convert(data) {
+    let out = JSON.parse(JSON.stringify(data));
+    for (let i = 0; i < data[0]["B"].length; i++) {
+        out[0]["B"][i][0] += out[0]["B"][i][2];
+    }
+    return out;
+}
+
+function data_convert_reverse(data) {
+    let out = JSON.parse(JSON.stringify(data));
+    for (let i = 0; i < data[0]["B"].length; i++) {
+        out[0]["B"][i][0] -= out[0]["B"][i][2];
+    }
+    return out;
+}
+
+async function process_data(data, writejson) {
+    data = data_convert(data);
+    let body = JSON.stringify(data);
+    //debugger;
+    if (writejson !== false)
+        document.getElementById("intext").value = body;
+    let url = "/nms";
+    try {
+        const response = await fetch(url, {
+          method: 'POST', // or 'PUT'
+          body, // data can be `string` or {object}!
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const json = await response.json();
+        // console.log('Success:', JSON.stringify(json));
+        document.getElementById("outtext").value = JSON.stringify(json);
+        return data_convert_reverse(json);
+        //return json
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    //return data;
+}
+
+let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+
+//letiables
+let canvasx = canvas.getBoundingClientRect().left;
+let canvasy = canvas.getBoundingClientRect().top;
+let last_mousex = 0;
+let last_mousey = 0;
+let mousex = 0;
+let mousey = 0;
+let mousedown = false;
+let width;
+let height;
+
+let savedRects = [];
+let savedS = [];
+
+//Mousedown
+canvas.addEventListener("mousedown", function(e) {
+    last_mousex = parseInt(e.pageX-canvasx);
+	last_mousey = parseInt(e.pageY-canvasy);
+    mousedown = true;
+});
+
+//Mouseup
+canvas.addEventListener("mouseup", function(e) {
+    mousedown = false;
+    let [x1, x2] = [mousex, last_mousex].sort((a, b) => a - b);
+    let [y1, y2] = [mousey, last_mousey].sort((a, b) => a - b);
+    savedRects.push([x1,y1,width,height]);
+    savedS.push(slider.value/1000);
+});
+
+function plot_rects() {
+    for (let i = 0; i < savedRects.length; i++) {
+        //console.log(r);
+        let [x,y,width,height] = savedRects[i];
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 5;
+        ctx.rect(x,y,width,height);
+        ctx.globalAlpha = savedS[i];
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        //ctx.stroke();
+    }
+}
+
+//Mousemove
+//Canvas Out
+let canvasOut = document.getElementById('canvasOut');
+let ctxOut = canvasOut.getContext('2d');
+function resized() {
+    canvasOut.width = canvasOut.clientWidth;
+    canvasOut.height = canvasOut.clientHeight;
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+}
+window.addEventListener('resize', resized)
+
+setTimeout(function() {
+     resized();
+}, 0)
+//letiables
+let canvasxOut = canvasOut.getBoundingClientRect().left;
+let canvasyOut = canvasOut.getBoundingClientRect().top;
+let last_mousexOut = 0;
+let last_mouseyOut = 0;
+let mousexOut = 0;
+let mouseyOut = 0;
+let mousedownOut = false;
+let widthOut;
+let heightOut;
+//Mouseup
+function plot_rects_out(rects, S) {
+    ctxOut.clearRect(0,0,canvasOut.width,canvasOut.height); //clear canvas
+    //console.log(S);
+    for (let i = 0; i < rects.length; i++) {
+        // console.log(rects[0]);
+        let [x,y,width,height] = rects[i];
+        ctxOut.globalAlpha = S[i];
+        //console.log(S[i]);
+        //console.log(ctxOut.globalAlpha);
+        ctxOut.beginPath();
+        ctxOut.strokeStyle = "black";
+        ctxOut.rect(x,y,width,height);
+        ctxOut.lineWidth = 5;
+        ctxOut.stroke();
+        ctxOut.globalAlpha = 1;
+    }
+}
+
+canvas.addEventListener("mousemove", async function(e) {
+    mousex = parseInt(e.pageX-canvasx);
+	mousey = parseInt(e.pageY-canvasy);
+    if(mousedown) {
+        let [x1, x2] = [mousex, last_mousex].sort((a, b) => a - b);
+        let [y1, y2] = [mousey, last_mousey].sort((a, b) => a - b);
+        width = x2-x1;
+        height = y2-y1;
+        let B = [].concat(savedRects, [[x1, y1, width, height]]);
+        // let S = Array(B.length).fill(1);
+        let S = [].concat(savedS, [slider.value/1000]);
+        let data = [{B, S}];
+        
+        ctx.clearRect(0,0,canvas.width,canvas.height); //clear canvas
+        plot_rects();
+        ctx.beginPath();
+        ctx.rect(x1,y1,width,height);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 5;
+        ctx.globalAlpha = slider.value/1000;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        let processed = await process_data(data);
+        plot_rects_out(processed[0]["B"], processed[0]["S"]);
+    }
+    //Output
+//    $('#output').html('current: '+mousex+', '+mousey+'<br/>last: '+last_mousex+', '+last_mousey+'<br/>mousedown: '+mousedown);
+});
+document.getElementById("intext").addEventListener("input", async (e) => {
+    ctx.clearRect(0,0,canvas.width,canvas.height); //clear canvas
+    let data = JSON.parse(e.target.value);
+    data = data_convert_reverse(data);
+    //debugger;
+    [savedRects, savedS] = [data[0]["B"], data[0]["S"]];
+    plot_rects();
+    let processed = await process_data(data, false);
+    plot_rects_out(processed[0]["B"], processed[0]["S"]);
+});
+</script>
+<script>
+"use strict";
+let slider = document.getElementById("myRange");
+let output = document.getElementById("demo");
+output.innerHTML = slider.value/1000;
+
+slider.oninput = function() {
+  output.innerHTML = this.value/1000;
+}
+
+function init() {
+    document.getElementById("outtext").value = "";
+    document.getElementById("intext").value = "";
+}
+window.onload = init;
+
+let deletee = document.getElementById("delete");
+
+deletee.onclick = async () => {
+    savedRects.pop();
+    savedS.pop();
+    ctx.clearRect(0,0,canvas.width,canvas.height); //clear canvas
+    plot_rects();
+    let processed = await process_data([{B: savedRects, S: savedS}]);
+    plot_rects_out(processed[0]["B"], processed[0]["S"]);
+}
+</script>
+</body>
+</html>
